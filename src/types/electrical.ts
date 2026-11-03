@@ -96,10 +96,35 @@ export interface ElectricalTelemetry {
   fault_active: boolean;
   fault_message?: string;
   hardware_connected: boolean;
+
+  // Diagram Architecture Telemetry (400V Grid / 555V DC-Link / 133V Supercap / PMSM)
+  v_grid_3ph: number;           // 400 V
+  i_rect_a: number;             // Irect (A)
+  p_grid_kw: number;            // Pgrid (kW)
+  i_br_a: number;               // Ibr (A)
+  p_br_kw: number;              // Pbrake (kW)
+  chopper_state_text: string;   // 'chopper off' | 'chopper active'
+  c_dc_mf: number;              // 4.7 mF
+  i_dc_dcdc: number;            // Idc (A) e.g. -16.8 A
+  dcdc_duty_val: number;        // D e.g. 0.24
+  dcdc_mode_desc: string;       // 'BOOST: discharging' | 'BUCK: charging' | 'STANDBY'
+  v_scap_bank: number;          // Vsc e.g. 133.4 V
+  i_scap_bank: number;          // Isc e.g. -72.0 A
+  p_scap_kw: number;            // e.g. -9.6 kW
+  i_inv_a: number;              // Iinv e.g. 16.8 A
+  p_inv_kw: number;             // Pinv e.g. 9.3 kW
+  iq_pk_a: number;              // iq e.g. 28.1 A pk
+  fe_hz: number;                // fe e.g. 12.8 Hz
+  vph_v: number;                // Vph e.g. 219 V
+  mod_index: number;            // mod. index e.g. 0.68
+  rope_force_kn: number;        // F e.g. 4.21 kN
+  p_shaft_kw: number;           // Pshaft e.g. 8.4 kW
+  mechanical_state_text: string;// 'MOTORING' | 'REGENERATING' | 'IDLE'
 }
 
 export type ComponentId = 
   | 'ac_source'
+  | 'grid_3ph'
   | 'transformer'
   | 'fuse_ac'
   | 'switch_ac'
@@ -107,6 +132,9 @@ export type ComponentId =
   | 'voltmeter_ac'
   | 'bridge_rectifier'
   | 'dc_link_cap'
+  | 'brake_chopper'
+  | 'inverter_3ph'
+  | 'elevator_cabin'
   | 'voltmeter_dc'
   | 'ammeter_dc'
   | 'dpst_switch'
@@ -119,7 +147,13 @@ export type ComponentId =
   | 'motor_drive'
   | 'pmsm_motor'
   | 'ground_ac'
-  | 'ground_dc';
+  | 'ground_dc'
+  | 'bts7960_driver'
+  | 'dc_motor'
+  | 'arduino_controller'
+  | 'lcd_display'
+  | 'reverse_led'
+  | 'spdt_switch';
 
 export interface ComponentSpec {
   id: ComponentId;

@@ -41,12 +41,12 @@ export const Oscilloscope: React.FC<Props> = ({ samples, onClear }) => {
   const [timebaseMs] = useState<number>(50); // ms per division
 
   const [channels, setChannels] = useState<ChannelConfig[]>([
-    { key: 'vac', name: 'CH1: AC Volt', unit: 'V', color: '#38bdf8', scale: 0.15, offset: 0, enabled: true },
-    { key: 'vdc', name: 'CH2: DC-Link', unit: 'V', color: '#ef4444', scale: 2.2, offset: 0, enabled: true },
-    { key: 'vscap', name: 'CH3: Supercap V', unit: 'V', color: '#10b981', scale: 2.2, offset: 0, enabled: true },
-    { key: 'iscap', name: 'CH4: Supercap I', unit: 'A', color: '#f59e0b', scale: 8.0, offset: 0, enabled: true },
-    { key: 'rpm', name: 'CH5: Motor RPM', unit: 'RPM', color: '#a855f7', scale: 0.05, offset: 0, enabled: false },
-    { key: 'torque', name: 'CH6: Motor Torque', unit: 'Nm', color: '#ec4899', scale: 4.0, offset: 0, enabled: false },
+    { key: 'vac', name: 'CH1: AC Grid (400V)', unit: 'V', color: '#38bdf8', scale: 0.12, offset: 0, enabled: true },
+    { key: 'vdc', name: 'CH2: DC-Link (555V)', unit: 'V', color: '#ef4444', scale: 0.12, offset: 0, enabled: true },
+    { key: 'vscap', name: 'CH3: Supercap (133V)', unit: 'V', color: '#10b981', scale: 0.40, offset: 0, enabled: true },
+    { key: 'iscap', name: 'CH4: Supercap I (A)', unit: 'A', color: '#f59e0b', scale: 0.80, offset: 0, enabled: true },
+    { key: 'rpm', name: 'CH5: Motor (RPM)', unit: 'RPM', color: '#a855f7', scale: 0.70, offset: 0, enabled: false },
+    { key: 'torque', name: 'CH6: Motor Torque', unit: 'Nm', color: '#ec4899', scale: 0.05, offset: 0, enabled: false },
   ]);
 
   const toggleChannel = (key: ChannelKey) => {

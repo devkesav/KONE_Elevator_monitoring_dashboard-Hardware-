@@ -1,11 +1,11 @@
 import type { ElectricalTelemetry, ElevatorMotionState, PowerFlowDirection } from '../types/electrical';
 
 export interface SimulationConfig {
-  acVoltagePri: number;    // 230V
+  acVoltagePri: number;    // 230V Single-Phase Grid
   acFreq: number;          // 50Hz
-  transformerRatio: number;// 230:12 = 19.167
-  dcLinkCapacitance: number;// 0.015 F
-  supercapCapacitance: number;// 58 Farad pack (6x 350F cells in series)
+  transformerRatio: number;// 230V:12V = 19.167 (Step-Down)
+  dcLinkCapacitance: number;// 0.015 F (15 mF)
+  supercapCapacitance: number;// 58 Farad pack (6x 350F cells in series, 16.0V max)
   supercapEsr: number;     // 14.5 mOhm pack ESR
   brakeResistanceOhm: number; // 5.0 Ohm dynamic braking dump resistor
   ratedMotorRpm: number;   // 950 RPM
@@ -17,8 +17,8 @@ export interface SimulationConfig {
 export const DEFAULT_CONFIG: SimulationConfig = {
   acVoltagePri: 230,
   acFreq: 50,
-  transformerRatio: 230 / 12,
-  dcLinkCapacitance: 0.015,
+  transformerRatio: 230 / 12, // 19.167
+  dcLinkCapacitance: 0.015, // 15 mF
   supercapCapacitance: 58.0,
   supercapEsr: 0.0145, // 14.5 mOhm
   brakeResistanceOhm: 5.0, // 5 Ohm dump resistor
@@ -38,16 +38,16 @@ export class ElectricalSimulationEngine {
   private carLoadPayloadKg: number = 600;
   private speedMultiplier: number = 1.0;
   
-  // Supercapacitor 2-Branch Physical Model Parameters
-  private scapOcv: number = 13.85;         // Open-circuit primary chemical voltage
-  private scapDiffusionV: number = 13.82;  // Slow diffusion branch voltage (pore redistribution)
+  // Supercapacitor 2-Branch Physical Model Parameters (6S EDLC Bank: 10.5V - 16.0V)
+  private scapOcv: number = 13.2;         // Open-circuit primary chemical voltage
+  private scapDiffusionV: number = 13.1;  // Slow diffusion branch voltage (pore redistribution)
   private scapFilteredCurrent: number = 0; // Filtered current with inductive slew rate
   private scapTempC: number = 29.5;        // Cell pack temperature
   private scapCumulativeAh: number = 0;    // Amp-hour integration
   private scapCycleCounter: number = 142;  // Historical cycle counter
   private prechargeCompleted: boolean = true;
   
-  // Dynamic Braking Dump Resistor State
+  // Dynamic Braking Dump Resistor State (5 Ohm)
   private brakeResistorTempC: number = 28.0; // Resistor temperature (°C)
   private brakeResistorPowerW: number = 0;   // Watts being dissipated as heat
   private brakeResistorCurrentA: number = 0; // Amps through resistor
@@ -79,13 +79,13 @@ export class ElectricalSimulationEngine {
 
     return {
       timestamp: Date.now(),
-      vac_primary: 230,
+      vac_primary: 230.0,
       iac_primary: 0,
       freq_ac: 50.0,
       vac_secondary: 12.0,
       iac_secondary: 0,
       transformer_temp: 34.5,
-      transformer_eff: 96.8,
+      transformer_eff: 96.5,
       fuse_blown: false,
       main_switch_closed: true,
       dpst_switch_closed: true,
@@ -93,20 +93,20 @@ export class ElectricalSimulationEngine {
       v_rect_out: 15.6,
       i_rect_out: 0,
       diode_status: [true, true, true, true],
-      rectifier_temp: 36.2,
-      vdc_bus: 15.8,
+      rectifier_temp: 32.2,
+      vdc_bus: 15.6,
       idc_bus: 0,
       pdc_bus: 0,
       vdc_ripple: 15,
-      cap_stored_energy: 0.5 * this.config.dcLinkCapacitance * Math.pow(15.8, 2),
+      cap_stored_energy: 0.5 * this.config.dcLinkCapacitance * Math.pow(15.6, 2),
       dcdc_mode: 'STANDBY',
-      dcdc_duty_cycle: 50,
+      dcdc_duty_cycle: 15,
       dcdc_current: 0,
-      dcdc_temp: 33.1,
-      v_scap: termV,
-      v_scap_ocv: ocv,
-      i_scap: 0,
-      soc_scap: Math.round(soc * 10) / 10,
+      dcdc_temp: 31.1,
+      v_scap: 13.2,
+      v_scap_ocv: 13.2,
+      i_scap: 0.0,
+      soc_scap: 53.3,
       stored_energy_scap: Math.round(storedJoules),
       scap_stored_wh: Math.round((storedJoules / 3600) * 100) / 100,
       scap_power_w: 0,
@@ -114,7 +114,7 @@ export class ElectricalSimulationEngine {
       scap_esr_mohm: this.config.supercapEsr * 1000,
       scap_status: 'FLOAT',
       scap_temp: this.scapTempC,
-      scap_cell_voltages: [ocv/6 + 0.01, ocv/6 - 0.02, ocv/6, ocv/6 + 0.02, ocv/6 - 0.01, ocv/6],
+      scap_cell_voltages: [2.21, 2.20, 2.22, 2.19, 2.21, 2.20],
       scap_cycles: this.scapCycleCounter,
       scap_coulombic_eff: 99.4,
       brake_resistor_active: false,
@@ -123,11 +123,11 @@ export class ElectricalSimulationEngine {
       brake_resistor_temp: 28.0,
       brake_chopper_closed: false,
       motor_speed_rpm: 0,
-      motor_torque_nm: 0,
+      motor_torque_nm: 1.2,
       motor_mech_power: 0,
       motor_current: 0,
       motor_direction: 'STOP',
-      motor_temp: 38.0,
+      motor_temp: 32.0,
       regen_power_w: 0,
       car_floor: 1,
       car_position_m: 0,
@@ -138,6 +138,30 @@ export class ElectricalSimulationEngine {
       power_flow: 'IDLE',
       fault_active: false,
       hardware_connected: false,
+
+      // Diagram Architecture Telemetry (Dedicated to KONE Eco-Drive 400V Industrial View)
+      v_grid_3ph: 400.0,
+      i_rect_a: 0.0,
+      p_grid_kw: 0.0,
+      i_br_a: 0.0,
+      p_br_kw: 0.0,
+      chopper_state_text: 'chopper off',
+      c_dc_mf: 4.7,
+      i_dc_dcdc: -16.8,
+      dcdc_duty_val: 0.24,
+      dcdc_mode_desc: 'BOOST: discharging',
+      v_scap_bank: 133.4,
+      i_scap_bank: -72.0,
+      p_scap_kw: -9.6,
+      i_inv_a: 16.8,
+      p_inv_kw: 9.3,
+      iq_pk_a: 28.1,
+      fe_hz: 12.8,
+      vph_v: 219.0,
+      mod_index: 0.68,
+      rope_force_kn: 4.21,
+      p_shaft_kw: 8.4,
+      mechanical_state_text: 'MOTORING',
     };
   }
 
@@ -193,8 +217,8 @@ export class ElectricalSimulationEngine {
     this.carVel = 0;
     this.carHeightM = 0;
     this.targetFloor = 3;
-    this.scapOcv = 13.85;
-    this.scapDiffusionV = 13.82;
+    this.scapOcv = 13.2;
+    this.scapDiffusionV = 13.1;
     this.scapFilteredCurrent = 0;
     this.brakeResistorTempC = 28.0;
     this.brakeResistorPowerW = 0;
@@ -210,8 +234,8 @@ export class ElectricalSimulationEngine {
     this.scapDiffusionV = this.scapOcv;
     this.scapFilteredCurrent = 0;
     if (clampedSoc >= 98) {
-      this.scapOcv = 16.0;
-      this.scapDiffusionV = 16.0;
+      this.scapOcv = 145.0;
+      this.scapDiffusionV = 145.0;
     }
     this.update(0.01);
   }
@@ -239,7 +263,7 @@ export class ElectricalSimulationEngine {
     const massImbalance = totalCarMass - cwMass;
 
     let desiredState: ElevatorMotionState = 'IDLE';
-    const maxSpeed = 1.6; // m/s
+    const maxSpeed = 2.01; // m/s (KONE Eco-Drive 2.01 m/s rated speed)
     const accel = 0.8;    // m/s^2
 
     if (Math.abs(heightDiff) > 0.05 && this.state.motion_state !== 'EMERGENCY_STOP') {
@@ -296,27 +320,25 @@ export class ElectricalSimulationEngine {
 
     if (this.carVel > 0.01) {
       const isUp = desiredState.includes('UP');
-      const netDirection = isUp ? 1 : -1;
-      const effectiveForceN = massImbalance * g * netDirection + 480;
-      mechanicalPowerW = effectiveForceN * this.carVel;
+      const isRegenCondition = (!isUp && massImbalance > 50) || (isUp && massImbalance < -50);
+      const speedRatio = Math.min(1.0, this.carVel / maxSpeed);
       
-      const sheaveRadPerSec = this.carVel / sheaveRadiusM;
-      const motorRadPerSec = sheaveRadPerSec * gearRatio;
-      motorRpm = (motorRadPerSec * 60) / (2 * Math.PI);
-      motorTorqueNm = effectiveForceN * sheaveRadiusM / gearRatio;
+      motorRpm = speedRatio * this.config.ratedMotorRpm;
 
-      if (mechanicalPowerW > 10) {
-        powerFlow = 'MOTORING';
-        regenPowerW = 0;
-      } else if (mechanicalPowerW < -10) {
+      if (isRegenCondition) {
         powerFlow = 'REGENERATING';
-        regenPowerW = Math.abs(mechanicalPowerW) * 0.90; // 90% recovery
+        mechanicalPowerW = -Math.round(85 * speedRatio + 15);
+        regenPowerW = Math.abs(mechanicalPowerW) * 0.88;
+        motorTorqueNm = -(Math.round((Math.abs(mechanicalPowerW) * 9.5488 / Math.max(80, motorRpm)) * 10) / 10);
       } else {
-        powerFlow = 'IDLE';
+        powerFlow = 'MOTORING';
+        mechanicalPowerW = Math.round(115 * speedRatio + 20);
+        regenPowerW = 0;
+        motorTorqueNm = Math.round((mechanicalPowerW * 9.5488 / Math.max(80, motorRpm)) * 10) / 10;
       }
     } else {
       motorRpm = 0;
-      motorTorqueNm = 1.2;
+      motorTorqueNm = 0.8;
       mechanicalPowerW = 0;
       powerFlow = 'IDLE';
     }
@@ -333,10 +355,11 @@ export class ElectricalSimulationEngine {
 
     if (secVoltage > 1.5 && !this.blownFuse && !this.mainSwitchOpen) {
       if (this.diodeFailedOpen) {
-        rectOutV = Math.max(0, (secVoltage * Math.SQRT2 - diodeDrop));
+        rectOutV = Math.max(0, (secVoltage * Math.SQRT2 * 0.95 - diodeDrop));
         diodeStatus = [true, false, false, false];
       } else {
-        rectOutV = Math.max(0, (secVoltage * Math.SQRT2 - 2 * diodeDrop));
+        // 3-Phase Diode Rectifier into DC Link: ~555.3V DC Bus
+        rectOutV = Math.max(0, (secVoltage * Math.SQRT2 * 0.982 - 2 * diodeDrop));
         diodeStatus = [true, true, true, true];
       }
     }
@@ -352,62 +375,50 @@ export class ElectricalSimulationEngine {
     let brakeCurrentA = 0;
     let chopperClosed = false;
 
-    // Check if Supercapacitor is 100% Fully Charged (15.98V or higher = SOC >= 99.6%)
-    const scapIsFull = this.scapOcv >= 15.98;
+    // Check if Supercapacitor Bank is 100% Fully Charged (15.8V or higher on 16V pack)
+    const scapIsFull = this.scapOcv >= 15.8;
 
     if (!this.dpstSwitchOpen) {
       if (powerFlow === 'REGENERATING' && regenPowerW > 10) {
         if (!scapIsFull) {
-          // NORMAL REGEN: Supercap is not full, so it absorbs the regenerative braking energy!
+          // NORMAL REGEN: Supercap absorbs regenerative braking energy (Buck charging)
           dcdcMode = 'BUCK';
-          const chargePower = Math.min(1800, regenPowerW * 0.95);
-          targetIScap = chargePower / Math.max(8.0, this.scapOcv);
+          targetIScap = 2.5 * (Math.abs(this.carVel) / 2.01);
           brakePowerW = 0;
           brakeCurrentA = 0;
           chopperClosed = false;
           this.chopperCycleTimer = 0;
         } else {
           // OVERFLOW REGEN: Supercapacitor is 100% FULL!
-          // Cannot absorb more without destructive overvoltage hazard.
-          // DC-DC cuts off charging current into the supercapacitor immediately (0A).
+          // Brake Chopper on the DC Link burns excess energy across the 5 Ohm dump resistor!
           dcdcMode = 'STANDBY';
           targetIScap = 0.0;
-          this.scapFilteredCurrent = 0.0; // Immediate hard cutoff into supercap
+          this.scapFilteredCurrent = 0.0;
           
-          // Switch Q_CHOP shuts and remains closed to fully dissipate the overflow current:
           chopperClosed = true;
-          // All excess overflow energy is drawn through the parallel dump resistor:
-          brakePowerW = Math.round(regenPowerW * 0.96);
+          brakePowerW = Math.round(Math.pow(vdcBus, 2) / this.config.brakeResistanceOhm);
           brakeCurrentA = Math.sqrt(brakePowerW / this.config.brakeResistanceOhm);
         }
-      } else if (scapIsFull && this.scapOcv >= 15.92) {
-        // OVERFLOW SATURATION BLEED (when at 100% full capacity):
-        // Shut switch to fully dissipate excess energy through parallel resistor until safe
+      } else if (scapIsFull && this.scapOcv >= 15.8) {
+        // High voltage bleed on DC link
         dcdcMode = 'STANDBY';
         targetIScap = 0.0;
         this.scapFilteredCurrent = 0.0;
-
         chopperClosed = true;
-        brakePowerW = Math.round((Math.pow(this.scapOcv, 2) / this.config.brakeResistanceOhm) * 12);
+        brakePowerW = Math.round(Math.pow(vdcBus, 2) / this.config.brakeResistanceOhm);
         brakeCurrentA = Math.sqrt(brakePowerW / this.config.brakeResistanceOhm);
-      } else if (powerFlow === 'MOTORING' && desiredState.includes('ACCEL') && this.scapOcv > 10.2) {
+      } else if (powerFlow === 'MOTORING' && Math.abs(this.carVel) > 0.05 && this.scapOcv > 10.5) {
         this.chopperCycleTimer = 0;
-        // High Acceleration Motoring: DC-DC operates in BOOST Mode to assist DC bus
+        // Motoring: DC-DC operates in BOOST mode (discharging assisting DC bus)
         dcdcMode = 'BOOST';
-        const assistPower = Math.min(1600, mechanicalPowerW * 0.52);
-        targetIScap = -(assistPower / Math.max(8.0, this.scapOcv));
+        targetIScap = -3.8 * (Math.abs(this.carVel) / 2.01);
         brakePowerW = 0;
         brakeCurrentA = 0;
         chopperClosed = false;
       } else {
         this.chopperCycleTimer = 0;
-        // Standby / Cruising / Coasting:
         dcdcMode = 'STANDBY';
-        if (this.scapOcv < 14.5 && vdcBus > 14.5) {
-          targetIScap = 0.25;
-        } else {
-          targetIScap = 0.0;
-        }
+        targetIScap = 0.0;
         brakePowerW = 0;
         brakeCurrentA = 0;
         chopperClosed = false;
@@ -425,25 +436,23 @@ export class ElectricalSimulationEngine {
     // Physical Current Inductance Slew Rate Filtering: dI/dt = (I_target - I_current) / tau_L
     const tauCurrent = 0.06;
     if (scapIsFull && targetIScap <= 0.01) {
-      // Rapid clamp on overvoltage cutoff: extinguish current immediately
       this.scapFilteredCurrent = 0.0;
     } else {
       this.scapFilteredCurrent += (targetIScap - this.scapFilteredCurrent) * (dt / tauCurrent);
     }
     const iScap = Math.abs(this.scapFilteredCurrent) < 0.05 ? 0.0 : this.scapFilteredCurrent;
 
-    // Dynamic Braking Dump Resistor Thermal Dissipation Model:
-    // Heat In = P_brake, Heat Out = (T_res - T_amb) / R_th_res
+    // Dynamic Braking Dump Resistor Thermal Dissipation Model (5 Ohm Resistor)
     this.brakeResistorPowerW = brakePowerW;
     this.brakeResistorCurrentA = brakeCurrentA;
     this.brakeChopperActive = chopperClosed;
     const ambTemp = 25.0;
-    const cThermalRes = 20.0;  // Thermal mass of ceramic/wirewound resistor
-    const rThermalRes = 0.85;  // Thermal resistance to air
+    const cThermalRes = 25.0;  // Wirewound brake resistor
+    const rThermalRes = 0.65;
     const dTempRes = (brakePowerW - (this.brakeResistorTempC - ambTemp) / rThermalRes) * (dt / cThermalRes);
     this.brakeResistorTempC = Math.max(25.0, Math.min(260.0, this.brakeResistorTempC + dTempRes));
 
-    // 2-Branch EDLC Integration:
+    // 2-Branch EDLC Integration (16V bank):
     const c1 = this.config.supercapCapacitance * 0.88;
     const c2 = this.config.supercapCapacitance * 0.12;
     const rDiff = 1.4;
@@ -455,27 +464,26 @@ export class ElectricalSimulationEngine {
     this.scapOcv += dOcv;
     this.scapDiffusionV += dDiffV;
 
-    // Strict Voltage Clamping: Never exceed 16.0V (100% full capacity)
-    this.scapOcv = Math.max(8.5, Math.min(16.0, this.scapOcv));
-    this.scapDiffusionV = Math.max(8.5, Math.min(16.0, this.scapDiffusionV));
+    // Strict Voltage Clamping: 10.0V to 16.0V
+    this.scapOcv = Math.max(10.0, Math.min(16.0, this.scapOcv));
+    this.scapDiffusionV = Math.max(10.0, Math.min(16.0, this.scapDiffusionV));
 
     // Instantaneous Loaded Terminal Voltage with IR Step
     const scapEsr = this.config.supercapEsr;
     const irDrop = iScap * scapEsr;
-    // Terminal voltage cannot exceed 16.0V when current is zero or discharging
-    const termVoltage = Math.max(8.5, Math.min(16.05, this.scapOcv + irDrop));
+    const termVoltage = Math.max(10.0, Math.min(16.2, this.scapOcv + irDrop));
 
     // Supercap Cell Pack Thermal Model
     const pLossW = Math.pow(iScap, 2) * scapEsr;
-    const cThermal = 80.0;
-    const rThermal = 4.2;
+    const cThermal = 120.0;
+    const rThermal = 3.5;
     const dTemp = (pLossW - (this.scapTempC - ambTemp) / rThermal) * (dt / cThermal);
     this.scapTempC += dTemp;
 
     // Amp-Hour integration & Cycles counting
     const deltaAh = Math.abs(iScap * dt) / 3600;
     this.scapCumulativeAh += deltaAh;
-    if (this.scapCumulativeAh > 0.52) {
+    if (this.scapCumulativeAh > 1.5) {
       this.scapCumulativeAh = 0;
       this.scapCycleCounter++;
     }
@@ -488,15 +496,15 @@ export class ElectricalSimulationEngine {
     // State of Charge (SOC): 10.0V (0%) to 16.0V (100%)
     const soc = Math.max(0, Math.min(100, ((this.scapOcv - 10.0) / (16.0 - 10.0)) * 100));
 
-    // 6-Cell Balancing Array
+    // 6-Series Cells Balancing Array (2.7V nominal per cell)
     const nominalCellV = this.scapOcv / 6;
     const cellVoltages = [
       Math.round((nominalCellV + 0.012) * 1000) / 1000,
-      Math.round((nominalCellV - 0.018) * 1000) / 1000,
-      Math.round((nominalCellV + 0.005) * 1000) / 1000,
-      Math.round((nominalCellV + 0.021) * 1000) / 1000,
-      Math.round((nominalCellV - 0.014) * 1000) / 1000,
-      Math.round((nominalCellV - 0.006) * 1000) / 1000,
+      Math.round((nominalCellV - 0.015) * 1000) / 1000,
+      Math.round((nominalCellV + 0.008) * 1000) / 1000,
+      Math.round((nominalCellV + 0.018) * 1000) / 1000,
+      Math.round((nominalCellV - 0.011) * 1000) / 1000,
+      Math.round((nominalCellV - 0.005) * 1000) / 1000,
     ];
 
     // Status label
@@ -586,6 +594,42 @@ export class ElectricalSimulationEngine {
       fault_active: faultActive,
       fault_message: faultMsg,
       hardware_connected: false,
+
+      // Diagram Architecture Telemetry
+      v_grid_3ph: 400.0,
+      i_rect_a: (!this.mainSwitchOpen && !this.blownFuse && (this.dpstSwitchOpen || soc < 5.0)) ? Math.round((Math.abs(mechanicalPowerW) / 400) * 10) / 10 : 0.0,
+      p_grid_kw: (!this.mainSwitchOpen && !this.blownFuse && (this.dpstSwitchOpen || soc < 5.0)) ? Math.round((Math.abs(mechanicalPowerW) / 1000) * 10) / 10 : 0.0,
+      i_br_a: Math.round(this.brakeResistorCurrentA * 10) / 10,
+      p_br_kw: Math.round((this.brakeResistorPowerW / 1000) * 10) / 10,
+      chopper_state_text: this.brakeChopperActive ? 'chopper active' : 'chopper off',
+      c_dc_mf: 4.7,
+      i_dc_dcdc: powerFlow === 'MOTORING' 
+        ? -Math.round((Math.abs(this.carVel) / 2.01 * 16.8) * 10) / 10
+        : powerFlow === 'REGENERATING' && !this.brakeChopperActive
+        ? Math.round((Math.abs(this.carVel) / 2.01 * 11.7) * 10) / 10
+        : 0.0,
+      dcdc_duty_val: 0.24,
+      dcdc_mode_desc: powerFlow === 'MOTORING' && Math.abs(this.carVel) > 0.05
+        ? 'BOOST: discharging'
+        : powerFlow === 'REGENERATING' && !this.brakeChopperActive
+        ? 'BUCK: charging'
+        : 'STANDBY',
+      v_scap_bank: Math.round(termVoltage * 10) / 10,
+      i_scap_bank: Math.round(iScap * 10) / 10,
+      p_scap_kw: Math.round((scapPowerW / 1000) * 10) / 10,
+      i_inv_a: Math.round((Math.abs(this.carVel) / 2.01 * 16.8) * 10) / 10,
+      p_inv_kw: Math.round((Math.abs(this.carVel) / 2.01 * 9.3) * 10) / 10,
+      iq_pk_a: Math.round((Math.abs(this.carVel) / 2.01 * 28.1) * 10) / 10,
+      fe_hz: Math.round((Math.abs(this.carVel) / 2.01 * 12.8) * 10) / 10,
+      vph_v: Math.round((Math.abs(this.carVel) / 2.01 * 219.0)),
+      mod_index: Math.round((Math.abs(this.carVel) / 2.01 * 0.68) * 100) / 100,
+      rope_force_kn: Math.abs(this.carVel) > 0.05 ? 4.21 : 0.0,
+      p_shaft_kw: powerFlow === 'MOTORING'
+        ? Math.round((Math.abs(this.carVel) / 2.01 * 8.4) * 10) / 10
+        : powerFlow === 'REGENERATING'
+        ? -Math.round((Math.abs(this.carVel) / 2.01 * 7.5) * 10) / 10
+        : 0.0,
+      mechanical_state_text: powerFlow === 'MOTORING' ? 'MOTORING' : powerFlow === 'REGENERATING' ? 'REGENERATING' : 'IDLE',
     };
 
     return this.state;

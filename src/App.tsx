@@ -10,8 +10,10 @@ import { WebSerialService } from './services/webSerialService';
 import { TopBar } from './components/header/TopBar';
 import { ComponentLibrary } from './components/library/ComponentLibrary';
 import { ElectricalSchematic } from './components/schematic/ElectricalSchematic';
+import { ArchitectureDiagram } from './components/schematic/ArchitectureDiagram';
 import { ComponentInspector } from './components/inspector/ComponentInspector';
 import { Oscilloscope } from './components/oscilloscope/Oscilloscope';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export const App: React.FC = () => {
   // Engine & Serial instances
@@ -20,6 +22,7 @@ export const App: React.FC = () => {
 
   // Application State
   const [mode, setMode] = useState<SimulationMode>('DEMO');
+  const [viewMode, setViewMode] = useState<'ARCHITECTURE' | 'SCHEMATIC'>('ARCHITECTURE');
   const [isRunning, setIsRunning] = useState<boolean>(true);
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(1.0);
   const [telemetry, setTelemetry] = useState<ElectricalTelemetry>(() => simEngineRef.current.getState());
@@ -161,14 +164,48 @@ export const App: React.FC = () => {
           onSetTargetFloor={handleSetTargetFloor}
         />
 
-        {/* CENTER COLUMN: Real Electrical Engineering Schematic (65-70% workspace) */}
+        {/* CENTER COLUMN: Real Electrical Engineering Architecture / Schematic */}
         <div className="flex-1 h-full relative overflow-hidden flex flex-col">
-          <ElectricalSchematic
-            telemetry={telemetry}
-            selectedComponent={selectedComponent}
-            onSelectComponent={setSelectedComponent}
-            onToggleSwitch={handleToggleSwitch}
-          />
+          {/* View Mode Switcher Header Toolbar */}
+          <div className="absolute top-3 left-4 z-20 flex items-center bg-slate-900/90 backdrop-blur border border-slate-700/80 rounded-lg p-0.5 shadow-xl font-mono text-xs">
+            <button
+              onClick={() => setViewMode('ARCHITECTURE')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition ${
+                viewMode === 'ARCHITECTURE'
+                  ? 'bg-sky-600 text-white font-bold shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>⚡ ARCHITECTURE DIAGRAM</span>
+            </button>
+            <button
+              onClick={() => setViewMode('SCHEMATIC')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition ${
+                viewMode === 'SCHEMATIC'
+                  ? 'bg-sky-600 text-white font-bold shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>🔌 DETAILED SCHEMATIC</span>
+            </button>
+          </div>
+
+          <ErrorBoundary fallbackTitle="Schematic Workbench Error">
+            {viewMode === 'ARCHITECTURE' ? (
+              <ArchitectureDiagram
+                telemetry={telemetry}
+                selectedComponent={selectedComponent}
+                onSelectComponent={setSelectedComponent}
+              />
+            ) : (
+              <ElectricalSchematic
+                telemetry={telemetry}
+                selectedComponent={selectedComponent}
+                onSelectComponent={setSelectedComponent}
+                onToggleSwitch={handleToggleSwitch}
+              />
+            )}
+          </ErrorBoundary>
         </div>
 
         {/* RIGHT COLUMN: Component Inspector (Simulink/Proteus style) */}

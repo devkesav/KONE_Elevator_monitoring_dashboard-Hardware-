@@ -9,6 +9,7 @@ interface Props {
   isDissipatingHeat?: boolean;
   dissipatedPowerW?: number;
   temperatureC?: number;
+  showBadge?: boolean;
   selected?: boolean;
   onClick?: () => void;
 }
@@ -22,11 +23,14 @@ export const ResistorSymbol: React.FC<Props> = ({
   isDissipatingHeat = false,
   dissipatedPowerW = 0,
   temperatureC = 28.0,
+  showBadge,
   selected,
   onClick,
 }) => {
   const resistorColor = isDissipatingHeat ? '#f97316' : '#f59e0b';
-  const glowColor = isDissipatingHeat ? '#ef4444' : 'transparent';
+  // Only show the live dissipation badge if it's explicitly enabled or actively dissipating heat
+  const shouldRenderBadge = showBadge !== undefined ? showBadge : isDissipatingHeat;
+  const displayTag = tag.includes('Ω') ? tag : `${tag} (${resistanceOhm} Ω)`;
 
   return (
     <g
@@ -144,46 +148,48 @@ export const ResistorSymbol: React.FC<Props> = ({
         fontWeight="bold"
         fontFamily="monospace"
       >
-        {tag} ({resistanceOhm} Ω)
+        {displayTag}
       </text>
 
-      {/* Live Heat Dissipation Readout Badge: strictly to the right for vertical resistor */}
-      <g transform={orientation === 'horizontal' ? 'translate(0, 18)' : 'translate(24, 0)'}>
-        <rect
-          x={orientation === 'horizontal' ? -42 : 0}
-          y={orientation === 'horizontal' ? -6 : -1}
-          width={orientation === 'horizontal' ? 84 : 96}
-          height={isDissipatingHeat ? (orientation === 'horizontal' ? 26 : 30) : (orientation === 'horizontal' ? 16 : 18)}
-          rx="3"
-          fill="#020617"
-          stroke={isDissipatingHeat ? '#f97316' : '#1e293b'}
-          strokeWidth="1.2"
-        />
-        <text
-          x={orientation === 'horizontal' ? 0 : 48}
-          y={orientation === 'horizontal' ? 5.5 : 11}
-          textAnchor="middle"
-          fill={isDissipatingHeat ? '#f97316' : '#94a3b8'}
-          fontSize="8.5"
-          fontWeight="bold"
-          fontFamily="monospace"
-        >
-          {isDissipatingHeat ? `HEAT: ${dissipatedPowerW}W` : 'IDLE (0W)'}
-        </text>
-        {isDissipatingHeat && (
+      {/* Live Heat Dissipation Readout Badge: only rendered when active or explicitly requested */}
+      {shouldRenderBadge && (
+        <g transform={orientation === 'horizontal' ? 'translate(0, 18)' : 'translate(24, 0)'}>
+          <rect
+            x={orientation === 'horizontal' ? -42 : 0}
+            y={orientation === 'horizontal' ? -6 : -1}
+            width={orientation === 'horizontal' ? 84 : 96}
+            height={isDissipatingHeat ? (orientation === 'horizontal' ? 26 : 30) : (orientation === 'horizontal' ? 16 : 18)}
+            rx="3"
+            fill="#020617"
+            stroke={isDissipatingHeat ? '#f97316' : '#1e293b'}
+            strokeWidth="1.2"
+          />
           <text
             x={orientation === 'horizontal' ? 0 : 48}
-            y={orientation === 'horizontal' ? 16 : 23}
+            y={orientation === 'horizontal' ? 5.5 : 11}
             textAnchor="middle"
-            fill="#ea580c"
-            fontSize="8"
-            fontFamily="monospace"
+            fill={isDissipatingHeat ? '#f97316' : '#94a3b8'}
+            fontSize="8.5"
             fontWeight="bold"
+            fontFamily="monospace"
           >
-            {temperatureC.toFixed(1)}°C (DISSIPATING)
+            {isDissipatingHeat ? `HEAT: ${dissipatedPowerW}W` : 'IDLE (0W)'}
           </text>
-        )}
-      </g>
+          {isDissipatingHeat && (
+            <text
+              x={orientation === 'horizontal' ? 0 : 48}
+              y={orientation === 'horizontal' ? 16 : 23}
+              textAnchor="middle"
+              fill="#ea580c"
+              fontSize="8"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {temperatureC.toFixed(1)}°C (DISSIPATING)
+            </text>
+          )}
+        </g>
+      )}
     </g>
   );
 };

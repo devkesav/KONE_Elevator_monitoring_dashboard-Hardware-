@@ -47,6 +47,26 @@ export const ComponentInspector: React.FC<Props> = ({
   // Render content according to the selected component
   const renderComponentData = () => {
     switch (selectedComponent) {
+      case 'ac_source':
+      case 'grid_3ph':
+        return {
+          title: '3φ GRID — 400V INDUSTRIAL MAINS',
+          tag: '3φ GRID',
+          standard: 'IEC 60038 / IEEE 141',
+          category: 'AC Source',
+          measurements: [
+            { label: 'Line-to-Line Voltage', value: `${telemetry.v_grid_3ph.toFixed(1)} V AC`, color: 'text-sky-400' },
+            { label: 'Grid Frequency (f)', value: `${telemetry.freq_ac.toFixed(1)} Hz`, color: 'text-sky-400' },
+            { label: 'Rectified Current (Irect)', value: `${telemetry.i_rect_a.toFixed(1)} A`, color: 'text-amber-400' },
+            { label: 'Grid Active Power (Pgrid)', value: `${telemetry.p_grid_kw.toFixed(1)} kW`, color: 'text-emerald-400' },
+          ],
+          specs: [
+            { label: 'Nominal Voltage', value: '400 V RMS (3-Phase)' },
+            { label: 'Nominal Frequency', value: '50.0 Hz' },
+            { label: 'Peak Shaving', value: 'Zero grid draw during Supercap assist' },
+          ],
+        };
+
       case 'transformer':
         return {
           title: 'T1 — STEP-DOWN TRANSFORMER',
@@ -62,10 +82,8 @@ export const ComponentInspector: React.FC<Props> = ({
             { label: 'Core / Winding Temp', value: `${telemetry.transformer_temp.toFixed(1)} °C`, color: 'text-slate-300' },
           ],
           specs: [
-            { label: 'Rated Primary Voltage', value: '230 V AC (Single Phase)' },
-            { label: 'Rated Secondary Voltage', value: '12.0 V AC RMS' },
-            { label: 'Rated Power', value: '500 VA' },
-            { label: 'Turns Ratio (Np/Ns)', value: '19.17 : 1' },
+            { label: 'Rated Primary Voltage', value: '400 V AC (3-Phase)' },
+            { label: 'Rated Power', value: '15 kVA' },
             { label: 'Core Material', value: 'Grain-Oriented Silicon Steel' },
             { label: 'Winding Isolation', value: 'Class H (180°C)' },
           ],
@@ -73,81 +91,199 @@ export const ComponentInspector: React.FC<Props> = ({
 
       case 'bridge_rectifier':
         return {
-          title: 'BR1 — FULL-WAVE BRIDGE RECTIFIER',
-          tag: 'BR1',
+          title: 'DIODE RECTIFIER (6-PULSE 3φ BRIDGE)',
+          tag: 'RECTIFIER',
           standard: 'IEC 60146 / IEEE 141',
           category: 'Rectification',
           measurements: [
-            { label: 'AC Input Voltage (Vac)', value: `${telemetry.vac_secondary.toFixed(1)} V`, color: 'text-sky-400' },
-            { label: 'DC Output Voltage (Vdc)', value: `${telemetry.v_rect_out.toFixed(1)} V`, color: 'text-rose-400' },
-            { label: 'Rectifier Current (Idc)', value: `${telemetry.i_rect_out.toFixed(2)} A`, color: 'text-amber-400' },
+            { label: 'AC Input Voltage (Vac)', value: `${telemetry.v_grid_3ph.toFixed(1)} V`, color: 'text-sky-400' },
+            { label: 'Rectified Current (Irect)', value: `${telemetry.i_rect_a.toFixed(1)} A`, color: 'text-amber-400' },
+            { label: 'Active Grid Power (Pgrid)', value: `${telemetry.p_grid_kw.toFixed(1)} kW`, color: 'text-emerald-400' },
+            { label: 'DC Bus Output (Vdc)', value: `${telemetry.vdc_bus.toFixed(1)} V`, color: 'text-rose-400' },
             { label: 'Junction Temp', value: `${telemetry.rectifier_temp.toFixed(1)} °C`, color: 'text-slate-300' },
-            { label: 'Conduction Angle', value: '180° (Continuous)', color: 'text-emerald-400' },
           ],
           diodes: [
-            { name: 'Diode D1 (High Side Pos)', state: telemetry.diode_status[0] },
-            { name: 'Diode D2 (Low Side Return)', state: telemetry.diode_status[1] },
-            { name: 'Diode D3 (Opposite High Side)', state: telemetry.diode_status[2] },
-            { name: 'Diode D4 (Opposite Low Side)', state: telemetry.diode_status[3] },
+            { name: 'Diode D1 (Phase U High)', state: telemetry.diode_status[0] },
+            { name: 'Diode D2 (Phase U Low)', state: telemetry.diode_status[1] },
+            { name: 'Diode D3 (Phase V High)', state: telemetry.diode_status[2] },
+            { name: 'Diode D4 (Phase V Low)', state: telemetry.diode_status[3] },
           ],
           specs: [
-            { label: 'Configuration', value: '4x Fast Recovery Silicon Diodes' },
-            { label: 'Peak Inverse Voltage (PIV)', value: '100 V' },
-            { label: 'Forward Voltage Drop (Vf)', value: '0.7 V per diode' },
-            { label: 'Max Forward Current', value: '25 A' },
+            { label: 'Configuration', value: '3-Phase 6-Pulse Diode Bridge' },
+            { label: 'Peak Inverse Voltage (PIV)', value: '1200 V' },
+            { label: 'Forward Voltage Drop (Vf)', value: '0.85 V per diode' },
+            { label: 'Max Surge Current', value: '150 A' },
           ],
         };
 
       case 'dc_link_cap':
         return {
-          title: 'C_DC — DC-LINK SMOOTHING CAPACITOR',
-          tag: 'C1',
+          title: 'DC LINK — C_dc SMOOTHING BUS',
+          tag: 'DC LINK',
           standard: 'IEC 61071 Power Electronic Capacitors',
-          category: 'Filtering & Energy Buffer',
+          category: 'DC Bus Energy Buffer',
           measurements: [
             { label: 'DC-Link Bus Voltage (Vdc)', value: `${telemetry.vdc_bus.toFixed(1)} V`, color: 'text-rose-400' },
-            { label: 'Capacitance Value', value: '15,000 µF (15 mF)', color: 'text-sky-400' },
-            { label: 'Stored Electrostatic Energy', value: `${telemetry.cap_stored_energy.toFixed(2)} J`, color: 'text-emerald-400' },
-            { label: 'Peak-to-Peak Ripple Voltage', value: `${telemetry.vdc_ripple.toFixed(1)} mV`, color: 'text-amber-400' },
-            { label: 'Bus Power (Pdc)', value: `${telemetry.pdc_bus} W`, color: 'text-emerald-400' },
+            { label: 'Capacitance Value (C_dc)', value: `${telemetry.c_dc_mf.toFixed(1)} mF (4700 µF)`, color: 'text-sky-400' },
+            { label: 'Stored Energy', value: `${(0.5 * 0.0047 * Math.pow(telemetry.vdc_bus, 2) / 1000).toFixed(2)} kJ`, color: 'text-emerald-400' },
+            { label: 'Inverter Current (Iinv)', value: `${telemetry.i_inv_a.toFixed(1)} A`, color: 'text-amber-400' },
+            { label: 'DC-DC Port Current (Idc)', value: `${telemetry.i_dc_dcdc.toFixed(1)} A`, color: 'text-sky-400' },
           ],
           specs: [
-            { label: 'Dielectric Type', value: 'Electrolytic / Polypropylene Film' },
-            { label: 'Rated DC Voltage', value: '25 V DC (Surge: 30V)' },
-            { label: 'Equivalent Series Res. (ESR)', value: '12 mΩ' },
-            { label: 'Ripple Current Rating', value: '18 A RMS' },
+            { label: 'Capacitor Type', value: 'High-Ripple Metallized Polypropylene Film' },
+            { label: 'Rated DC Voltage', value: '800 V DC' },
+            { label: 'Rated Capacitance', value: '4.7 mF' },
+            { label: 'ESR @ 10 kHz', value: '2.5 mΩ' },
+          ],
+        };
+
+      case 'bts7960_driver':
+        return {
+          title: 'BTS7960 — 43A HIGH-POWER H-BRIDGE MOTOR DRIVER',
+          tag: 'BTS7960',
+          standard: 'Infineon NovalithIC™ Dual Half-Bridge',
+          category: 'Motor Controller Power Stage',
+          measurements: [
+            { label: 'Operating Mode', value: telemetry.power_flow === 'REGENERATING' ? 'REGENERATIVE BRAKING' : telemetry.power_flow === 'MOTORING' ? (telemetry.motor_direction === 'CW' ? 'FORWARD MOTORING' : 'REVERSE MOTORING') : 'IDLE / COAST', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'PWM Duty Cycle (D)', value: `${Math.round(Math.min(100, (Math.abs(telemetry.motor_speed_rpm) / 950) * 100))}%`, color: 'text-amber-400' },
+            { label: 'Output Voltage (M+ to M-)', value: `${(telemetry.vdc_bus * (Math.abs(telemetry.motor_speed_rpm) / 950)).toFixed(1)} V`, color: 'text-sky-400' },
+            { label: 'Motor Current (I_motor)', value: `${telemetry.motor_current.toFixed(2)} A`, color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'MOSFET Rds(on)', value: '16 mΩ per switch', color: 'text-slate-400' },
+            { label: 'Internal Temp', value: `${(32 + Math.abs(telemetry.motor_current) * 1.5).toFixed(1)} °C`, color: 'text-slate-300' },
+          ],
+          specs: [
+            { label: 'Operating Voltage Range', value: '5.5 V to 27.0 V DC' },
+            { label: 'Peak Current Limit', value: '43 A (Integrated Current Sense)' },
+            { label: 'PWM Switching Frequency', value: 'Up to 25 kHz' },
+            { label: 'Protection', value: 'Over-temp, Under-voltage, Active Freewheeling' },
+          ],
+        };
+
+      case 'dc_motor':
+        return {
+          title: 'DC TRACTION MOTOR & INERTIAL FLYWHEEL',
+          tag: 'DC MOTOR + FLYWHEEL',
+          standard: 'IEC 60034 Rotating Electrical Machines',
+          category: 'Electromechanical Dynamo / Load',
+          measurements: [
+            { label: 'Shaft Speed (n)', value: `${telemetry.motor_speed_rpm.toFixed(0)} RPM`, color: 'text-sky-400' },
+            { label: 'Shaft Torque (τ)', value: `${telemetry.motor_torque_nm.toFixed(2)} Nm`, color: 'text-amber-400' },
+            { label: 'Mechanical Power (P)', value: `${telemetry.motor_mech_power.toFixed(1)} W`, color: 'text-emerald-400' },
+            { label: 'Direction of Rotation', value: telemetry.motor_direction === 'CW' ? 'CW (CLOCKWISE)' : telemetry.motor_direction === 'CCW' ? 'CCW (COUNTER-CW)' : 'STOPPED', color: 'text-sky-300' },
+            { label: 'Back-EMF (E_b)', value: `${(telemetry.motor_speed_rpm * 0.012).toFixed(2)} V`, color: 'text-purple-400' },
+            { label: 'Coupled Flywheel Inertia (J)', value: '0.045 kg·m² (Steel Disk)', color: 'text-slate-400' },
+          ],
+          specs: [
+            { label: 'Nominal Voltage', value: '12.0 V DC (15.6V Overdrive)' },
+            { label: 'Rated Speed', value: '950 RPM' },
+            { label: 'Armature Resistance (Ra)', value: '0.35 Ω' },
+            { label: 'Armature Inductance (La)', value: '1.2 mH' },
+          ],
+        };
+
+      case 'arduino_controller':
+        return {
+          title: 'ARDUINO ATmega328P MICROCONTROLLER',
+          tag: 'ARDUINO MCU',
+          standard: 'Embedded 8-bit RISC Microcontroller',
+          category: 'Control & PWM Signal Generation',
+          measurements: [
+            { label: 'Clock Speed', value: '16.0 MHz Crystal', color: 'text-sky-400' },
+            { label: 'RPWM Pin (D5)', value: telemetry.motor_direction === 'CW' && telemetry.power_flow === 'MOTORING' ? 'ACTIVE PWM (490 Hz)' : '0 V (LOW)', color: 'text-amber-400' },
+            { label: 'LPWM Pin (D6)', value: telemetry.motor_direction === 'CCW' && telemetry.power_flow === 'MOTORING' ? 'ACTIVE PWM (490 Hz)' : '0 V (LOW)', color: 'text-purple-400' },
+            { label: 'Enable Pins (D9, D10)', value: telemetry.main_switch_closed ? 'HIGH (5.0 V ENABLED)' : 'LOW (DISABLED)', color: 'text-emerald-400' },
+            { label: 'I2C Bus (A4 SDA / A5 SCL)', value: '100 kHz Live Telemetry Telecast', color: 'text-sky-300' },
+            { label: 'R&D Ground Tie', value: 'COMMON TIED TO B- (SOLVED)', color: 'text-emerald-400 font-bold' },
+          ],
+          specs: [
+            { label: 'Microcontroller Core', value: 'Microchip ATmega328P' },
+            { label: 'Operating Voltage', value: '5.0 V Regulated' },
+            { label: 'ADC Resolution', value: '10-bit (1024 steps)' },
+            { label: 'Flash Memory', value: '32 KB' },
+          ],
+        };
+
+      case 'lcd_display':
+        return {
+          title: 'I2C 16x2 CHARACTER LCD DISPLAY MODULE',
+          tag: '16x2 LCD (PCF8574)',
+          standard: 'HD44780 Controller with PCF8574 Backpack',
+          category: 'Visual Human-Machine Interface',
+          measurements: [
+            { label: 'Quadrant Operation', value: telemetry.power_flow === 'REGENERATING' ? (telemetry.motor_direction === 'CCW' ? 'Q4: REV REGEN' : 'Q2: FWD REGEN') : telemetry.power_flow === 'MOTORING' ? (telemetry.motor_direction === 'CCW' ? 'Q3: REV MOTOR' : 'Q1: FWD MOTOR') : 'STANDBY / IDLE', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'Displayed Duty Cycle', value: `${Math.round(Math.min(100, (Math.abs(telemetry.motor_speed_rpm) / 950) * 100))}%`, color: 'text-amber-400' },
+            { label: 'DC Link Voltage', value: `${telemetry.vdc_bus.toFixed(1)} V`, color: 'text-sky-400' },
+            { label: 'Supercap Voltage', value: `${telemetry.v_scap.toFixed(1)} V`, color: 'text-emerald-400' },
+            { label: 'I2C Slave Address', value: '0x27 (7-bit standard)', color: 'text-slate-400' },
+          ],
+          specs: [
+            { label: 'Display Format', value: '16 Characters x 2 Lines' },
+            { label: 'Backlight Color', value: 'Transflective Blue / Cyan LED' },
+            { label: 'Communication Protocol', value: 'I2C Fast Mode (SDA, SCL, VCC, GND)' },
+            { label: 'Refresh Rate', value: '25 Hz Continuous Update' },
+          ],
+        };
+
+      case 'reverse_led':
+        return {
+          title: 'LED (REVERSE STORED ENERGY) — REGEN INDICATOR',
+          tag: 'REVERSE STORED ENERGY LED',
+          standard: 'Optoelectronic Energy Scavenging Indicator',
+          category: 'Status Indication & Energy Harvesting Path',
+          measurements: [
+            { label: 'State', value: telemetry.power_flow === 'REGENERATING' ? 'ILLUMINATED (REGENERATION ACTIVE)' : 'OFF (STANDBY)', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400 font-bold' : 'text-slate-400' },
+            { label: 'Forward Current (If)', value: telemetry.power_flow === 'REGENERATING' ? '14.2 mA' : '0.0 mA', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-slate-400' },
+            { label: 'Forward Voltage (Vf)', value: telemetry.power_flow === 'REGENERATING' ? '2.15 V (Green)' : '0.0 V', color: 'text-emerald-400' },
+            { label: 'R&D Ballast Resistor', value: '1.0 kΩ 0.5W in series (PROTECTED)', color: 'text-emerald-400' },
+            { label: 'Reverse Voltage Protection', value: 'Antiparallel Diode 1N4007 (INTEGRATED)', color: 'text-slate-300' },
+          ],
+          specs: [
+            { label: 'Peak Wavelength', value: '525 nm (Pure Green)' },
+            { label: 'Luminous Intensity', value: '12,000 mcd Ultra-Bright' },
+            { label: 'Max Forward Current', value: '30 mA' },
+          ],
+        };
+
+      case 'brake_resistor':
+      case 'brake_chopper':
+        return {
+          title: 'BRAKE CHOPPER (+ R_brake)',
+          tag: 'BRAKE CHOPPER',
+          standard: 'IEC 60947-4-2 / IEEE 519',
+          category: 'Dynamic Heat Dissipation',
+          measurements: [
+            { label: 'Chopper IGBT State', value: telemetry.chopper_state_text.toUpperCase(), color: telemetry.brake_chopper_closed ? 'text-amber-400' : 'text-slate-400' },
+            { label: 'Brake Current (Ibr)', value: `${telemetry.i_br_a.toFixed(1)} A`, color: 'text-amber-400' },
+            { label: 'Braking Dissipated Power', value: `${telemetry.p_br_kw.toFixed(1)} kW`, color: 'text-rose-400' },
+            { label: 'Resistor Temperature', value: `${telemetry.brake_resistor_temp.toFixed(1)} °C`, color: 'text-amber-400' },
+          ],
+          specs: [
+            { label: 'Braking Resistance (R_brake)', value: '25.0 Ω' },
+            { label: 'Peak Power Rating', value: '15.0 kW (10 sec)' },
+            { label: 'Chopper Duty Threshold', value: 'Engages if Supercap 100% full' },
           ],
         };
 
       case 'supercapacitor':
         return {
-          title: 'SC_BANK — SUPERCAPACITOR STORAGE BANK',
-          tag: 'SC1',
+          title: 'SUPERCAP BANK — KONE ECO-DRIVE STORAGE',
+          tag: 'SUPERCAP',
           standard: 'IEC 62391 Double-Layer Capacitors',
           category: 'Energy Storage & Peak Shaving',
           measurements: [
-            { label: 'Loaded Terminal Voltage', value: `${telemetry.v_scap.toFixed(2)} V`, color: 'text-emerald-400' },
-            { label: 'Internal Open-Circuit (Vocv)', value: `${telemetry.v_scap_ocv.toFixed(2)} V`, color: 'text-sky-300' },
-            { label: 'Instantaneous IR Step (ΔV)', value: `${telemetry.scap_ir_drop_v > 0 ? '+' : ''}${telemetry.scap_ir_drop_v.toFixed(3)} V`, color: 'text-amber-400' },
-            { label: 'Charge/Discharge Current', value: `${telemetry.i_scap > 0 ? `+${telemetry.i_scap.toFixed(2)}` : telemetry.i_scap.toFixed(2)} A`, color: telemetry.i_scap > 0 ? 'text-emerald-400' : 'text-amber-400' },
-            { label: 'Instantaneous Power (Psc)', value: `${telemetry.scap_power_w > 0 ? `+${telemetry.scap_power_w.toFixed(0)}` : telemetry.scap_power_w.toFixed(0)} W`, color: 'text-amber-400' },
+            { label: 'Terminal Voltage (Vsc)', value: `${telemetry.v_scap_bank.toFixed(1)} V`, color: 'text-emerald-400' },
+            { label: 'Supercap Current (Isc)', value: `${telemetry.i_scap_bank > 0 ? `+${telemetry.i_scap_bank.toFixed(1)}` : telemetry.i_scap_bank.toFixed(1)} A`, color: telemetry.i_scap_bank > 0 ? 'text-emerald-400' : 'text-amber-400' },
+            { label: 'Instantaneous Power (Psc)', value: `${telemetry.p_scap_kw > 0 ? `+${telemetry.p_scap_kw.toFixed(1)}` : telemetry.p_scap_kw.toFixed(1)} kW`, color: 'text-sky-400' },
             { label: 'State of Charge (SOC)', value: `${telemetry.soc_scap.toFixed(1)} %`, color: 'text-sky-400' },
-            { label: 'Stored Energy (Joules)', value: `${(telemetry.stored_energy_scap / 1000).toFixed(2)} kJ`, color: 'text-emerald-400' },
-            { label: 'Stored Energy (Wh)', value: `${telemetry.scap_stored_wh.toFixed(2)} Wh`, color: 'text-emerald-400' },
-            { label: 'Module ESR', value: `${telemetry.scap_esr_mohm.toFixed(1)} mΩ`, color: 'text-slate-300' },
-            { label: 'Cell Pack Temp', value: `${telemetry.scap_temp.toFixed(1)} °C`, color: 'text-slate-300' },
-            { label: 'Coulombic Efficiency', value: `${telemetry.scap_coulombic_eff.toFixed(1)} %`, color: 'text-emerald-400' },
-            { label: 'Cycle Counter', value: `${telemetry.scap_cycles} Cycles`, color: 'text-slate-400' },
+            { label: 'Module Temperature', value: `${telemetry.scap_temp.toFixed(1)} °C`, color: 'text-slate-300' },
+            { label: 'Cumulative Cycles', value: `${telemetry.scap_cycles} Cycles`, color: 'text-slate-400' },
           ],
           cellBalances: telemetry.scap_cell_voltages,
           specs: [
-            { label: 'Configuration', value: '6x 350F Cells in Series (58F Pack)' },
-            { label: 'Cell Chemistry', value: 'EDLC Organic Electrolyte (Stern 2-Branch)' },
-            { label: 'Rated Capacitance', value: '58.0 Farads' },
-            { label: 'Operating Voltage Range', value: '10.0 V (Empty) to 16.2 V (Max)' },
-            { label: 'Peak Current Capability', value: '120 A (1 sec pulse)' },
-            { label: 'Total Pack ESR', value: '14.5 mΩ' },
-            { label: 'Endurance Rating', value: '1,000,000 Cycles @ 25°C' },
+            { label: 'Module Configuration', value: '48x 3000F EDLC Series Module Bank' },
+            { label: 'Operating Voltage Range', value: '110 V (Min) to 145 V (Max)' },
+            { label: 'Nominal Bank Voltage', value: '133.4 V' },
+            { label: 'Peak Motoring Current', value: '120 A (Discharge)' },
           ],
           action: onSetScapSoc ? {
             label: telemetry.soc_scap >= 98 ? 'DISCHARGE TO 70% (TEST CHARGING)' : 'FORCE 100% FULL (TEST HEAT DUMP)',
@@ -157,22 +293,67 @@ export const ComponentInspector: React.FC<Props> = ({
 
       case 'dcdc_converter':
         return {
-          title: 'CONV1 — BIDIRECTIONAL DC-DC CONVERTER',
-          tag: 'CONV1',
+          title: 'BIDIR DC-DC (BUCK / BOOST CONVERTER)',
+          tag: 'BIDIR DC-DC',
           standard: 'IEC 62477 / IEEE 1547',
-          category: 'Power Electronic Conversion',
+          category: 'Bidirectional Power Conversion',
           measurements: [
-            { label: 'Conversion Mode', value: telemetry.dcdc_mode, color: telemetry.dcdc_mode === 'BUCK' ? 'text-emerald-400' : telemetry.dcdc_mode === 'BOOST' ? 'text-amber-400' : 'text-slate-400' },
-            { label: 'PWM Duty Cycle', value: `${telemetry.dcdc_duty_cycle} %`, color: 'text-sky-400' },
-            { label: 'Inductor Current (I_L)', value: `${telemetry.dcdc_current.toFixed(2)} A`, color: 'text-amber-400' },
-            { label: 'Converter Efficiency', value: '96.2 %', color: 'text-emerald-400' },
+            { label: 'Operation Mode', value: telemetry.dcdc_mode_desc, color: telemetry.dcdc_mode_desc.includes('BOOST') ? 'text-amber-400' : telemetry.dcdc_mode_desc.includes('BUCK') ? 'text-emerald-400' : 'text-slate-400' },
+            { label: 'Duty Ratio (D)', value: `≈ ${telemetry.dcdc_duty_val.toFixed(2)}`, color: 'text-sky-400' },
+            { label: 'DC Bus Port Current (Idc)', value: `${telemetry.i_dc_dcdc.toFixed(1)} A`, color: 'text-sky-400' },
+            { label: 'Supercap Port Current (Isc)', value: `${telemetry.i_scap_bank.toFixed(1)} A`, color: 'text-amber-400' },
             { label: 'Power Stage Temp', value: `${telemetry.dcdc_temp.toFixed(1)} °C`, color: 'text-slate-300' },
           ],
           specs: [
-            { label: 'Topology', value: 'Synchronous Non-Isolated Buck/Boost' },
-            { label: 'Switching Devices', value: 'Dual N-Channel MOSFETs' },
-            { label: 'PWM Switching Freq', value: '50 kHz' },
-            { label: 'Filter Inductor (L1)', value: '47 µH, Ferrite core' },
+            { label: 'Topology', value: 'Synchronous Four-Quadrant Buck/Boost' },
+            { label: 'Boost Discharging Duty', value: 'Steps 133.4V up to 555.3V bus' },
+            { label: 'Buck Charging Duty', value: 'Steps 555.3V bus down to 133.4V scap' },
+            { label: 'Switching Frequency', value: '25 kHz SiC MOSFETs' },
+          ],
+        };
+
+      case 'motor_drive':
+      case 'inverter_3ph':
+        return {
+          title: 'INVERTER (3φ VOLTAGE SOURCE INVERTER)',
+          tag: 'INVERTER',
+          standard: 'IEC 61800-5-1',
+          category: 'Frequency Inverter',
+          measurements: [
+            { label: 'Inverter Current (Iinv)', value: `${telemetry.i_inv_a.toFixed(1)} A`, color: 'text-amber-400' },
+            { label: 'Inverter Active Power (Pinv)', value: `${telemetry.p_inv_kw.toFixed(1)} kW`, color: 'text-emerald-400' },
+            { label: 'Modulation Index (m)', value: `${telemetry.mod_index.toFixed(2)}`, color: 'text-purple-400' },
+            { label: 'Electrical Frequency (fe)', value: `${telemetry.fe_hz.toFixed(1)} Hz`, color: 'text-sky-400' },
+            { label: 'Phase Voltage (Vph)', value: `${telemetry.vph_v} V RMS`, color: 'text-sky-400' },
+          ],
+          specs: [
+            { label: 'Topology', value: '3-Phase 2-Level IGBT Bridge' },
+            { label: 'Modulation Algorithm', value: 'Space Vector PWM (SVPWM)' },
+            { label: 'Inverter Efficiency', value: '97.5 %' },
+          ],
+        };
+
+      case 'pmsm_motor':
+        return {
+          title: 'PMSM GEARLESS TRACTION MOTOR',
+          tag: 'PMSM',
+          standard: 'IEC 60034 / EN 81-20',
+          category: 'Gearless Elevator Drive',
+          measurements: [
+            { label: 'Quadrature Current (iq)', value: `${telemetry.iq_pk_a.toFixed(1)} A pk`, color: 'text-amber-400' },
+            { label: 'Electrical Frequency (fe)', value: `${telemetry.fe_hz.toFixed(1)} Hz`, color: 'text-sky-400' },
+            { label: 'Phase Voltage (Vph)', value: `${telemetry.vph_v} V`, color: 'text-sky-400' },
+            { label: 'Modulation Index', value: `${telemetry.mod_index.toFixed(2)}`, color: 'text-purple-400' },
+            { label: 'Shaft Power (Pshaft)', value: `${telemetry.p_shaft_kw.toFixed(1)} kW`, color: 'text-emerald-400' },
+            { label: 'Rope Tension Force (F)', value: `${telemetry.rope_force_kn.toFixed(2)} kN`, color: 'text-amber-400' },
+            { label: 'Elevator Velocity (v)', value: `${telemetry.car_velocity_ms.toFixed(2)} m/s`, color: 'text-sky-400' },
+            { label: 'Operating State', value: telemetry.mechanical_state_text, color: telemetry.mechanical_state_text === 'MOTORING' ? 'text-sky-400' : 'text-emerald-400' },
+          ],
+          specs: [
+            { label: 'Motor Design', value: 'Permanent Magnet Synchronous Motor (Gearless)' },
+            { label: 'Rated Elevator Speed', value: '2.01 m/s' },
+            { label: 'Sheave Radius', value: '0.25 m (500 mm sheave)' },
+            { label: 'Pole Pairs', value: '10 Pole Pairs (20 Poles)' },
           ],
         };
 
@@ -241,6 +422,113 @@ export const ComponentInspector: React.FC<Props> = ({
             label: telemetry.dpst_switch_closed ? 'OPEN CONTACTOR (ISOLATE)' : 'CLOSE CONTACTOR',
             onClick: onToggleDpstSwitch,
           },
+        };
+
+      case 'bts7960_driver':
+        return {
+          title: 'BTS7960 — 43A HIGH-POWER H-BRIDGE MOTOR DRIVER',
+          tag: 'BTS7960',
+          standard: 'Infineon NovalithIC™ Dual Half-Bridge',
+          category: 'Motor Controller Power Stage',
+          measurements: [
+            { label: 'Operating Mode', value: telemetry.power_flow === 'REGENERATING' ? 'REGENERATIVE BRAKING' : telemetry.power_flow === 'MOTORING' ? (telemetry.motor_direction === 'CW' ? 'FORWARD MOTORING' : 'REVERSE MOTORING') : 'IDLE / COAST', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'PWM Duty Cycle (D)', value: `${Math.round(Math.min(100, (Math.abs(telemetry.motor_speed_rpm) / 950) * 100))}%`, color: 'text-amber-400' },
+            { label: 'Output Voltage (M+ to M-)', value: `${(telemetry.vdc_bus * (Math.abs(telemetry.motor_speed_rpm) / 950)).toFixed(1)} V`, color: 'text-sky-400' },
+            { label: 'Motor Current (I_motor)', value: `${telemetry.motor_current.toFixed(2)} A`, color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'MOSFET Rds(on)', value: '16 mΩ per switch', color: 'text-slate-400' },
+            { label: 'Internal Temp', value: `${(32 + Math.abs(telemetry.motor_current) * 1.5).toFixed(1)} °C`, color: 'text-slate-300' },
+          ],
+          specs: [
+            { label: 'Operating Voltage Range', value: '5.5 V to 27.0 V DC' },
+            { label: 'Peak Current Limit', value: '43 A (Integrated Current Sense)' },
+            { label: 'PWM Switching Frequency', value: 'Up to 25 kHz' },
+            { label: 'Protection', value: 'Over-temp, Under-voltage, Active Freewheeling' },
+          ],
+        };
+
+      case 'dc_motor':
+        return {
+          title: 'DC TRACTION MOTOR & INERTIAL FLYWHEEL',
+          tag: 'DC MOTOR + FLYWHEEL',
+          standard: 'IEC 60034 Rotating Electrical Machines',
+          category: 'Electromechanical Dynamo / Load',
+          measurements: [
+            { label: 'Shaft Speed (n)', value: `${telemetry.motor_speed_rpm.toFixed(0)} RPM`, color: 'text-sky-400' },
+            { label: 'Shaft Torque (τ)', value: `${telemetry.motor_torque_nm.toFixed(2)} Nm`, color: 'text-amber-400' },
+            { label: 'Mechanical Power (P)', value: `${telemetry.motor_mech_power.toFixed(1)} W`, color: 'text-emerald-400' },
+            { label: 'Direction of Rotation', value: telemetry.motor_direction === 'CW' ? 'CW (CLOCKWISE)' : telemetry.motor_direction === 'CCW' ? 'CCW (COUNTER-CW)' : 'STOPPED', color: 'text-sky-300' },
+            { label: 'Back-EMF (E_b)', value: `${(telemetry.motor_speed_rpm * 0.012).toFixed(2)} V`, color: 'text-purple-400' },
+            { label: 'Coupled Flywheel Inertia (J)', value: '0.045 kg·m² (Steel Disk)', color: 'text-slate-400' },
+          ],
+          specs: [
+            { label: 'Nominal Voltage', value: '12.0 V DC (15.6V Overdrive)' },
+            { label: 'Rated Speed', value: '950 RPM' },
+            { label: 'Armature Resistance (Ra)', value: '0.35 Ω' },
+            { label: 'Armature Inductance (La)', value: '1.2 mH' },
+          ],
+        };
+
+      case 'arduino_controller':
+        return {
+          title: 'ARDUINO ATmega328P MICROCONTROLLER',
+          tag: 'ARDUINO MCU',
+          standard: 'Embedded 8-bit RISC Microcontroller',
+          category: 'Control & PWM Signal Generation',
+          measurements: [
+            { label: 'Clock Speed', value: '16.0 MHz Crystal', color: 'text-sky-400' },
+            { label: 'RPWM Pin (D5)', value: telemetry.motor_direction === 'CW' && telemetry.power_flow === 'MOTORING' ? 'ACTIVE PWM (490 Hz)' : '0 V (LOW)', color: 'text-amber-400' },
+            { label: 'LPWM Pin (D6)', value: telemetry.motor_direction === 'CCW' && telemetry.power_flow === 'MOTORING' ? 'ACTIVE PWM (490 Hz)' : '0 V (LOW)', color: 'text-purple-400' },
+            { label: 'Enable Pins (D9, D10)', value: telemetry.main_switch_closed ? 'HIGH (5.0 V ENABLED)' : 'LOW (DISABLED)', color: 'text-emerald-400' },
+            { label: 'I2C Bus (A4 SDA / A5 SCL)', value: '100 kHz Live Telemetry Telecast', color: 'text-sky-300' },
+            { label: 'R&D Ground Tie', value: 'COMMON TIED TO B- (SOLVED)', color: 'text-emerald-400 font-bold' },
+          ],
+          specs: [
+            { label: 'Microcontroller Core', value: 'Microchip ATmega328P' },
+            { label: 'Operating Voltage', value: '5.0 V Regulated' },
+            { label: 'ADC Resolution', value: '10-bit (1024 steps)' },
+            { label: 'Flash Memory', value: '32 KB' },
+          ],
+        };
+
+      case 'lcd_display':
+        return {
+          title: 'I2C 16x2 CHARACTER LCD DISPLAY MODULE',
+          tag: '16x2 LCD (PCF8574)',
+          standard: 'HD44780 Controller with PCF8574 Backpack',
+          category: 'Visual Human-Machine Interface',
+          measurements: [
+            { label: 'Quadrant Operation', value: telemetry.power_flow === 'REGENERATING' ? (telemetry.motor_direction === 'CCW' ? 'Q4: REV REGEN' : 'Q2: FWD REGEN') : telemetry.power_flow === 'MOTORING' ? (telemetry.motor_direction === 'CCW' ? 'Q3: REV MOTOR' : 'Q1: FWD MOTOR') : 'STANDBY / IDLE', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-sky-400' },
+            { label: 'Displayed Duty Cycle', value: `${Math.round(Math.min(100, (Math.abs(telemetry.motor_speed_rpm) / 950) * 100))}%`, color: 'text-amber-400' },
+            { label: 'DC Link Voltage', value: `${telemetry.vdc_bus.toFixed(1)} V`, color: 'text-sky-400' },
+            { label: 'Supercap Voltage', value: `${telemetry.v_scap.toFixed(1)} V`, color: 'text-emerald-400' },
+            { label: 'I2C Slave Address', value: '0x27 (7-bit standard)', color: 'text-slate-400' },
+          ],
+          specs: [
+            { label: 'Display Format', value: '16 Characters x 2 Lines' },
+            { label: 'Backlight Color', value: 'Transflective Blue / Cyan LED' },
+            { label: 'Communication Protocol', value: 'I2C Fast Mode (SDA, SCL, VCC, GND)' },
+            { label: 'Refresh Rate', value: '25 Hz Continuous Update' },
+          ],
+        };
+
+      case 'reverse_led':
+        return {
+          title: 'LED (REVERSE STORED ENERGY) — REGEN INDICATOR',
+          tag: 'REVERSE STORED ENERGY LED',
+          standard: 'Optoelectronic Energy Scavenging Indicator',
+          category: 'Status Indication & Energy Harvesting Path',
+          measurements: [
+            { label: 'State', value: telemetry.power_flow === 'REGENERATING' ? 'ILLUMINATED (REGENERATION ACTIVE)' : 'OFF (STANDBY)', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400 font-bold' : 'text-slate-400' },
+            { label: 'Forward Current (If)', value: telemetry.power_flow === 'REGENERATING' ? '14.2 mA' : '0.0 mA', color: telemetry.power_flow === 'REGENERATING' ? 'text-emerald-400' : 'text-slate-400' },
+            { label: 'Forward Voltage (Vf)', value: telemetry.power_flow === 'REGENERATING' ? '2.15 V (Green)' : '0.0 V', color: 'text-emerald-400' },
+            { label: 'R&D Ballast Resistor', value: '1.0 kΩ 0.5W in series (PROTECTED)', color: 'text-emerald-400' },
+            { label: 'Reverse Voltage Protection', value: 'Antiparallel Diode 1N4007 (INTEGRATED)', color: 'text-slate-300' },
+          ],
+          specs: [
+            { label: 'Peak Wavelength', value: '525 nm (Pure Green)' },
+            { label: 'Luminous Intensity', value: '12,000 mcd Ultra-Bright' },
+            { label: 'Max Forward Current', value: '30 mA' },
+          ],
         };
 
       case 'brake_resistor':

@@ -13,6 +13,7 @@ interface Props {
   storedWh?: number;       // Wh
   cellVoltages?: number[]; // 6 series cells
   status: 'CHARGING' | 'DISCHARGING' | 'FLOAT' | 'ISOLATED' | 'PRECHARGING';
+  tag?: string;
   selected?: boolean;
   onClick?: () => void;
 }
@@ -30,6 +31,7 @@ export const SupercapacitorSymbol: React.FC<Props> = ({
   storedWh = storedJoules / 3600,
   cellVoltages = [2.35, 2.34, 2.36, 2.35, 2.33, 2.35],
   status,
+  tag = 'SC_BANK (58F / 16.0V)',
   selected,
   onClick,
 }) => {
@@ -123,7 +125,7 @@ export const SupercapacitorSymbol: React.FC<Props> = ({
       <text x="-42" y="-12" fill="#ef4444" fontSize="10" fontWeight="bold" fontFamily="monospace">+</text>
       <text x="36" y="20" fill="#60a5fa" fontSize="10" fontWeight="bold" fontFamily="monospace">-</text>
 
-      {/* Tag: Placed cleanly to the TOP LEFT of the component box, clear of the right side and R_DUMP */}
+      {/* Tag: Placed cleanly to the TOP LEFT of the component box */}
       <text
         x="-14"
         y="-30"
@@ -133,7 +135,7 @@ export const SupercapacitorSymbol: React.FC<Props> = ({
         fontWeight="bold"
         fontFamily="monospace"
       >
-        SC_BANK (58F / 16.0V)
+        {tag}
       </text>
 
       {/* Real-time State of Charge (SOC) Bar */}

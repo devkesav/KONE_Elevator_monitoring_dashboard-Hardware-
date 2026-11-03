@@ -10,6 +10,7 @@ interface Props {
   isPolarized?: boolean;
   tag?: string;
   orientation?: 'vertical' | 'horizontal';
+  badgePosition?: 'left' | 'right';
   selected?: boolean;
   onClick?: () => void;
 }
@@ -24,6 +25,7 @@ export const CapacitorSymbol: React.FC<Props> = ({
   isPolarized = true,
   tag = 'C_DC (DC-LINK)',
   orientation = 'vertical',
+  badgePosition = 'right',
   selected,
   onClick,
 }) => {
@@ -96,7 +98,7 @@ export const CapacitorSymbol: React.FC<Props> = ({
       </text>
 
       {/* Live Measurement Badge */}
-      <g transform="translate(36, 0)">
+      <g transform={badgePosition === 'left' ? 'translate(-96, 0)' : 'translate(36, 0)'}>
         <rect
           x="0"
           y="-18"
